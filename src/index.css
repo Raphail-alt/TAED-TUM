@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --color-ink: #052e16;
+  --color-panel: #f3faf5;
+  --color-panel-2: #e4f4ea;
+  --color-line: #d0e6d8;
+  --color-mute: #4a6455;
+  --color-brand: #15803d;
+  --color-brand-2: #166534;
+  --color-mint: #4ade80;
+  --color-sun: #d97706;
+  --color-coral: #e11d48;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-mint);
+  color: var(--color-ink);
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgb(22 163 74 / 0.09) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(22 163 74 / 0.09) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 75%);
+}
+
+.text-gradient {
+  background: linear-gradient(100deg, #15803d, #16a34a 55%, #65a30d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-marquee { animation: marquee 30s linear infinite; }
+
+@layer components {
+  .field {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line);
+    background: #fff;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field:focus {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgb(22 163 74 / 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee { animation: none; }
+  html { scroll-behavior: auto; }
+}
