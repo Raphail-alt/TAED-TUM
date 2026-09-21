@@ -22,11 +22,12 @@ const isHttpUrl = (value) => {
   }
 }
 
-export default function EventForm({ event, onSave, onClose }) {
+export default function EventForm({ event, onSave, onClose, saveError }) {
   const [form, setForm] = useState(() =>
     event ? { ...empty, ...event, date: event.date.slice(0, 16) } : empty,
   )
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
@@ -37,22 +38,28 @@ export default function EventForm({ event, onSave, onClose }) {
   const set = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
+    setError('')
     const link = form.external_link.trim()
     const image = form.image.trim()
     if (!isHttpUrl(link)) return setError('External link must be a full URL starting with http:// or https://')
     if (image && !isHttpUrl(image)) return setError('Image must be a full URL starting with http:// or https://')
-    onSave({
-      title: form.title.trim(),
-      description: form.description.trim(),
-      date: form.date,
-      category: form.category,
-      venue: form.venue.trim(),
-      external_link: link,
-      image,
-      featured: form.featured,
-    })
+    setBusy(true)
+    try {
+      await onSave({
+        title: form.title.trim(),
+        description: form.description.trim(),
+        date: form.date,
+        category: form.category,
+        venue: form.venue.trim(),
+        external_link: link,
+        image,
+        featured: form.featured,
+      })
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -123,14 +130,16 @@ export default function EventForm({ event, onSave, onClose }) {
           </label>
         </div>
 
-        {error && <p role="alert" className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-coral">{error}</p>}
+        {(error || saveError) && (
+          <p role="alert" className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-coral">{error || saveError}</p>
+        )}
 
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" onClick={onClose} className="rounded-xl border border-line px-5 py-2.5 font-medium hover:border-brand hover:text-brand">
             Cancel
           </button>
-          <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-2">
-            {event ? 'Save changes' : 'Add event'}
+          <button type="submit" disabled={busy} className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-2 disabled:opacity-60">
+            {busy ? 'Saving...' : event ? 'Save changes' : 'Add event'}
           </button>
         </div>
       </form>

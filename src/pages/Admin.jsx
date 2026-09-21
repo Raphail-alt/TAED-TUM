@@ -39,8 +39,8 @@ function ModeBanner({ mode }) {
       <Database size={18} className="mt-0.5 shrink-0 text-brand" />
       {mode === 'supabase' ? (
         <p>
-          <span className="font-semibold text-ink">Connected to Supabase.</span> Accounts are live from your database.
-          Events are still stored in this browser until the events API is connected.
+          <span className="font-semibold text-ink">Connected to Supabase.</span> Accounts and events are live from your
+          database. Changes you make here show on the landing page for every visitor.
         </p>
       ) : (
         <p>
@@ -65,17 +65,33 @@ function Stat({ icon: Icon, label, value }) {
 }
 
 function EventsTab() {
-  const { events, addEvent, updateEvent, removeEvent } = useEvents()
+  const { events, loading, error, addEvent, updateEvent, removeEvent } = useEvents()
   const [editing, setEditing] = useState(null)
+  const [saveError, setSaveError] = useState('')
 
-  const save = (data) => {
-    if (editing === 'new') addEvent(data)
-    else updateEvent(editing.id, data)
-    setEditing(null)
+  const openEditor = (value) => {
+    setSaveError('')
+    setEditing(value)
   }
 
-  const remove = (event) => {
-    if (window.confirm(`Remove "${event.title}"? It will disappear from the landing page.`)) removeEvent(event.id)
+  const save = async (data) => {
+    setSaveError('')
+    try {
+      if (editing === 'new') await addEvent(data)
+      else await updateEvent(editing.id, data)
+      setEditing(null)
+    } catch (err) {
+      setSaveError(err.message)
+    }
+  }
+
+  const remove = async (event) => {
+    if (!window.confirm(`Remove "${event.title}"? It will disappear from the landing page.`)) return
+    try {
+      await removeEvent(event.id)
+    } catch (err) {
+      window.alert(`Could not remove the event: ${err.message}`)
+    }
   }
 
   return (
@@ -85,12 +101,22 @@ function EventsTab() {
           <h2 className="font-display text-xl font-semibold">Events</h2>
           <p className="text-sm text-mute">Everything here is live on the landing page.</p>
         </div>
-        <button onClick={() => setEditing('new')} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 font-semibold text-white hover:bg-brand-2">
+        <button onClick={() => openEditor('new')} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 font-semibold text-white hover:bg-brand-2">
           <Plus size={18} /> Add event
         </button>
       </div>
 
-      {events.length === 0 ? (
+      {error ? (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-coral">
+          <p className="font-semibold">Could not load events.</p>
+          <p className="mt-1">{error}</p>
+        </div>
+      ) : loading ? (
+        <div className="grid place-items-center rounded-2xl border border-line bg-white py-16 text-mute">
+          <Loader2 className="animate-spin text-brand" />
+          <p className="mt-2 text-sm">Loading events</p>
+        </div>
+      ) : events.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-white py-16 text-center text-mute">
           No events yet. Add the first one.
         </div>
@@ -129,7 +155,7 @@ function EventsTab() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => setEditing(e)} aria-label={`Edit ${e.title}`} className="rounded-lg border border-line p-2 text-mute hover:border-brand hover:text-brand">
+                      <button onClick={() => openEditor(e)} aria-label={`Edit ${e.title}`} className="rounded-lg border border-line p-2 text-mute hover:border-brand hover:text-brand">
                         <Pencil size={15} />
                       </button>
                       <button onClick={() => remove(e)} aria-label={`Remove ${e.title}`} className="rounded-lg border border-line p-2 text-mute hover:border-coral hover:text-coral">
@@ -145,7 +171,7 @@ function EventsTab() {
       )}
 
       {editing && (
-        <EventForm event={editing === 'new' ? null : editing} onSave={save} onClose={() => setEditing(null)} />
+        <EventForm event={editing === 'new' ? null : editing} onSave={save} onClose={() => setEditing(null)} saveError={saveError} />
       )}
     </section>
   )

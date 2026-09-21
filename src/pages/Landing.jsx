@@ -147,7 +147,7 @@ function About() {
 }
 
 function Events() {
-  const { events } = useEvents()
+  const { events, loading, error } = useEvents()
   const [active, setActive] = useState('All')
   const shown = useMemo(
     () => (active === 'All' ? events : events.filter((e) => e.category === active)),
@@ -175,7 +175,11 @@ function Events() {
           ))}
         </div>
 
-        {shown.length === 0 ? (
+        {loading ? (
+          <p className="py-16 text-center text-mute">Loading events...</p>
+        ) : error ? (
+          <p role="alert" className="py-16 text-center text-mute">We could not load the events right now. Please refresh in a moment.</p>
+        ) : shown.length === 0 ? (
           <p className="py-16 text-center text-mute">No events in this category yet. Check back soon.</p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
