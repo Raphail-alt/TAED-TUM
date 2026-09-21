@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { CalendarDays, ExternalLink, GraduationCap, Building2, LogOut, Pencil, Plus, Search, Star, Trash2, Users, Wrench, ShieldAlert } from 'lucide-react'
+import { CalendarDays, Database, Download, ExternalLink, GraduationCap, Building2, Loader2, LogOut, Pencil, Plus, RefreshCw, Search, Star, Trash2, Users, Wrench, ShieldAlert } from 'lucide-react'
 import { Logo } from '../components/Navbar'
 import EventForm from '../components/EventForm'
 import { useAuth } from '../context/AuthContext'
@@ -11,6 +11,45 @@ const roleStyle = {
   student: { label: 'Student', icon: GraduationCap, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   mentor: { label: 'Mentor', icon: Wrench, cls: 'bg-lime-50 text-lime-700 border-lime-200' },
   company: { label: 'Company', icon: Building2, cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+}
+
+// Prefix cells that spreadsheets would treat as formulas so exported data cannot run code.
+const csvCell = (value) => {
+  const text = String(value ?? '')
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text
+  return `"${safe.replace(/"/g, '""')}"`
+}
+
+function downloadAccountsCsv(accounts) {
+  const rows = [['Name', 'Type', 'Email', 'Joined']].concat(
+    accounts.map((a) => [a.name, roleStyle[a.role]?.label ?? a.role, a.email, a.created_at]),
+  )
+  const blob = new Blob([rows.map((r) => r.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `taed-accounts-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+function ModeBanner({ mode }) {
+  return (
+    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-line bg-white p-4 text-sm text-mute">
+      <Database size={18} className="mt-0.5 shrink-0 text-brand" />
+      {mode === 'supabase' ? (
+        <p>
+          <span className="font-semibold text-ink">Connected to Supabase.</span> Accounts are live from your database.
+          Events are still stored in this browser until the events API is connected.
+        </p>
+      ) : (
+        <p>
+          <span className="font-semibold text-ink">Demo mode.</span> Accounts and events are stored in this browser only.
+          Add your Supabase keys to make accounts real (see the README).
+        </p>
+      )}
+    </div>
+  )
 }
 
 function Stat({ icon: Icon, label, value }) {
@@ -113,7 +152,7 @@ function EventsTab() {
 }
 
 function AccountsTab() {
-  const { accounts } = useAuth()
+  const { accounts, accountsLoading, accountsError, reloadAccounts } = useAuth()
   const [role, setRole] = useState('all')
   const [query, setQuery] = useState('')
 
@@ -134,9 +173,18 @@ function AccountsTab() {
             Updates live when someone signs up.
           </p>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name or email" aria-label="Search accounts" className="field pl-9" />
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mute" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name or email" aria-label="Search accounts" className="field pl-9" />
+          </div>
+          <button onClick={reloadAccounts} aria-label="Refresh accounts" className="rounded-xl border border-line bg-white p-3 text-mute hover:border-brand hover:text-brand">
+            <RefreshCw size={16} />
+          </button>
+          <button onClick={() => downloadAccountsCsv(shown)} disabled={shown.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-medium hover:border-brand hover:text-brand disabled:opacity-50">
+            <Download size={16} /> Export CSV
+          </button>
         </div>
       </div>
 
@@ -149,7 +197,18 @@ function AccountsTab() {
         ))}
       </div>
 
-      {shown.length === 0 ? (
+      {accountsError ? (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-coral">
+          <p className="font-semibold">Could not load accounts.</p>
+          <p className="mt-1">{accountsError}</p>
+          <button onClick={reloadAccounts} className="mt-3 rounded-lg border border-rose-300 bg-white px-4 py-1.5 font-medium hover:bg-rose-100">Try again</button>
+        </div>
+      ) : accountsLoading && accounts.length === 0 ? (
+        <div className="grid place-items-center rounded-2xl border border-line bg-white py-16 text-mute">
+          <Loader2 className="animate-spin text-brand" />
+          <p className="mt-2 text-sm">Loading accounts</p>
+        </div>
+      ) : shown.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-white py-16 text-center text-mute">
           {accounts.length === 0 ? 'No accounts yet. They will appear here as people sign up.' : 'No accounts match your filters.'}
         </div>
@@ -190,10 +249,18 @@ function AccountsTab() {
 }
 
 export default function Admin() {
-  const { user, isAdmin, accounts, logOut } = useAuth()
+  const { user, loading, mode, isAdmin, accounts, logOut } = useAuth()
   const { events } = useEvents()
   const navigate = useNavigate()
   const [tab, setTab] = useState('events')
+
+  if (loading) {
+    return (
+      <div className="grid min-h-screen place-items-center text-brand">
+        <Loader2 className="animate-spin" />
+      </div>
+    )
+  }
 
   if (!user) return <Navigate to="/login" replace />
 
@@ -227,7 +294,7 @@ export default function Admin() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/" className="hidden text-sm text-mute hover:text-brand sm:inline">View site</Link>
             <button
-              onClick={() => { logOut(); navigate('/') }}
+              onClick={async () => { await logOut(); navigate('/') }}
               className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-medium hover:border-brand hover:text-brand"
             >
               <LogOut size={15} /> Log out
@@ -239,6 +306,8 @@ export default function Admin() {
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <h1 className="font-display text-3xl font-bold">Dashboard</h1>
         <p className="mt-1 text-mute">Manage the events on the landing page and see who has signed up.</p>
+
+        <ModeBanner mode={mode} />
 
         <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat icon={CalendarDays} label="Events" value={events.length} />

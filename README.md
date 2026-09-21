@@ -20,14 +20,24 @@ A public event feed with a protected admin panel. Students, mentors and companie
 
 ## Current status
 
-The frontend is complete. Accounts and events are currently kept in the browser's `localStorage` as a stand-in for the backend:
+- **Accounts (Supabase):** Sign-up, login and the admin accounts list use Supabase Auth and Postgres as soon as the two environment variables below are set. Without them the app runs in **demo mode** (browser `localStorage`, plus a demo admin login) so it still works for previews.
+- **Events:** Still stored in the browser (`src/context/EventsContext.jsx`) until the Express + MongoDB API is built. Swap that one file for real API calls; the UI does not need to change.
 
-- `src/context/AuthContext.jsx` is the stand-in for Supabase Auth.
-- `src/context/EventsContext.jsx` is the stand-in for the Express + MongoDB events API.
+## Set up Supabase
 
-Swap those two files for real API calls when the backend is ready. The rest of the UI does not need to change.
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Open **SQL Editor**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**. This creates the `students`, `mentors`, `companies` and `admins` tables, security rules, the signup trigger and realtime.
+3. Copy `.env.example` to `.env.local` and fill in the **Project URL** and **anon / publishable key** from **Project Settings > API**. Never use the `service_role` / secret key in this app.
+4. On Vercel, add the same two variables under **Project Settings > Environment Variables**, then redeploy.
+5. Make yourself an admin: sign up on the site with your admin email, then run this in the SQL Editor:
 
-The demo admin login shown on `/login` in development is a placeholder. Remove it before going live.
+   ```sql
+   insert into public.admins (user_id)
+   select id from auth.users where email = 'you@example.com'
+   on conflict do nothing;
+   ```
+
+Optional: in **Authentication > Providers > Email**, turn off "Confirm email" while testing so new accounts can log in immediately. Leave it on for production.
 
 ## Run locally
 

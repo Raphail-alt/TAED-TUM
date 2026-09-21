@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { Building2, Eye, EyeOff, GraduationCap, Loader2, Wrench } from 'lucide-react'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { Building2, Eye, EyeOff, GraduationCap, Loader2, MailCheck, Wrench } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
 import { ROLES, useAuth } from '../context/AuthContext'
 
@@ -12,7 +12,6 @@ const roleMeta = {
 
 export default function Signup() {
   const { user, signUp } = useAuth()
-  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const initial = params.get('role')
   const role = ROLES.includes(initial) ? initial : 'student'
@@ -22,8 +21,25 @@ export default function Signup() {
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [sentTo, setSentTo] = useState('')
 
   if (user) return <Navigate to={user.role === 'admin' ? '/admin' : '/'} replace />
+
+  if (sentTo) {
+    return (
+      <AuthLayout title="Check your email" subtitle="One last step to activate your account.">
+        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
+          <MailCheck size={40} className="mx-auto text-brand" />
+          <p className="mt-4">
+            We sent a confirmation link to <span className="font-semibold">{sentTo}</span>. Open it, then log in.
+          </p>
+          <Link to="/login" className="mt-6 inline-block rounded-xl bg-brand px-6 py-2.5 font-semibold text-white hover:bg-brand-2">
+            Go to log in
+          </Link>
+        </div>
+      </AuthLayout>
+    )
+  }
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
@@ -34,8 +50,11 @@ export default function Signup() {
     if (form.password !== form.confirm) return setError('Passwords do not match.')
     setBusy(true)
     try {
-      await signUp({ role, name: form.name, email: form.email, password: form.password })
-      navigate('/', { replace: true })
+      const { needsConfirmation } = await signUp({ role, name: form.name, email: form.email, password: form.password })
+      if (needsConfirmation) {
+        setSentTo(form.email.trim())
+        setBusy(false)
+      }
     } catch (err) {
       setError(err.message)
       setBusy(false)

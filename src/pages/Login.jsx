@@ -1,12 +1,11 @@
 ﻿import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
 import { DEMO_ADMIN, useAuth } from '../context/AuthContext'
 
 export default function Login() {
-  const { user, logIn } = useAuth()
-  const navigate = useNavigate()
+  const { user, mode, logIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -20,8 +19,7 @@ export default function Login() {
     setError('')
     setBusy(true)
     try {
-      const u = await logIn(email, password)
-      navigate(u.role === 'admin' ? '/admin' : '/', { replace: true })
+      await logIn(email, password)
     } catch (err) {
       setError(err.message)
       setBusy(false)
@@ -62,7 +60,7 @@ export default function Login() {
           New here? <Link to="/signup" className="font-semibold text-brand hover:underline">Create an account</Link>
         </p>
 
-        {import.meta.env.DEV && (
+        {import.meta.env.DEV && mode === 'local' && (
           <div className="rounded-xl border border-dashed border-brand/40 bg-panel p-3 text-xs text-mute">
             <p className="font-semibold text-brand">Demo admin (dev only)</p>
             <p className="mt-1">{DEMO_ADMIN.email} / {DEMO_ADMIN.password}</p>

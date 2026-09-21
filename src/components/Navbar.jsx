@@ -25,8 +25,8 @@ export default function Navbar() {
   const { user, isAdmin, logOut } = useAuth()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logOut()
+  const handleLogout = async () => {
+    await logOut()
     setOpen(false)
     navigate('/')
   }
