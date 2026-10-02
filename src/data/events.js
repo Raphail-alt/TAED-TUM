@@ -116,18 +116,33 @@ export const seedEvents = [
   },
 ]
 
+import esaLogo from '../assets/logos/esa-tum.jpg';
+import tisLogo from '../assets/logos/tum-tis.jpeg';
+import web3Logo from '../assets/logos/web3clubs-tum.jpeg';
+import ieeeLogo from '../assets/logos/ieee-tum.jpeg';
+import cecLogo from '../assets/logos/cec.jpg';
+import bmeLogo from '../assets/logos/bme.jpeg';
+import awsLogo from '../assets/logos/aws-tum.png';
+
 export const organizers = [
-  { name: 'TUM TIS', full: 'Technical University of Mombasa, Technology & Innovation Society', initials: 'TIS' },
-  { name: 'ESA-TUM', full: 'Engineering Students\' Association, TUM chapter', initials: 'ESA' },
-  { name: 'Web3 Clubs-TUM', full: 'Blockchain and Web3 community at TUM', initials: 'W3' },
+  { name: 'ESA-TUM', full: 'Engineering Students\' Association, TUM chapter', initials: 'ESA', logo: esaLogo },
+  { name: 'TUM TIS', full: 'Technical University of Mombasa, Technology & Innovation Society', initials: 'TIS', logo: tisLogo },
+  { name: 'Web3 Clubs-TUM', full: 'Blockchain and Web3 community at TUM', initials: 'W3', logo: web3Logo },
+  { name: 'IEEE TUM', full: 'IEEE TECHNICAL UNIVERSITY OF MOMBASA', initials: 'IEEE TUM', logo: ieeeLogo },
+  { name: 'CEC', full: 'CIVIL ENGINEERING CLUB -TUM', initials: 'CEC', logo: cecLogo },
+  { name: 'BME', full: 'BIOMEDICAL ENGINEERING CLUB-TUM', initials: 'BME', logo: bmeLogo },
+  { name: 'AWS TUM', full: 'AMAZON USER GROUP, TUM', initials: 'AWS-TUM', logo: awsLogo },
 ]
 
+
 export const focusAreas = [
+  { title: 'Engineering', text: 'Civil, electrical & electronics, mechanical and biomedical.' },
+  { title: 'Technology', text: 'Blockchain,Cloud, Data,Security' },
   { title: 'AI', text: 'Models, tooling and how to ship them.' },
-  { title: 'Blockchain', text: 'Web3 foundations and real use cases.' },
-  { title: 'Cloud', text: 'Infrastructure that scales with you.' },
-  { title: 'Data', text: 'Pipelines, analytics and decisions.' },
-  { title: 'Engineering', text: 'Civil, electrical, mechanical and beyond.' },
+  { title: 'Community', text: 'Students, mentors, and companies, all in one room.' },
+  { title: 'Innovation', text: 'From idea to prototype to pitch.' },
+  {title: 'Design', text: 'Product thinking and user experience.' },
+  {title: 'Entrepreneurship', text: 'Turning projects into ventures.'},
 ]
 
 export const audiences = [

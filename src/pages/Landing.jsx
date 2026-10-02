@@ -9,6 +9,7 @@ import { useEvents } from '../context/EventsContext'
 import { useAuth } from '../context/AuthContext'
 import { eventCategories, organizers, focusAreas, audiences } from '../data/events'
 import { formatDate, formatTime } from '../lib/format'
+import heroBg from "../assets/backgrounds/hero-bg.png"
 
 const audienceIcons = [GraduationCap, Wrench, Building2]
 
@@ -17,11 +18,22 @@ function Hero() {
   const { user } = useAuth()
 
   return (
-    <section id="top" className="relative overflow-hidden pt-28 sm:pt-36">
-      <div className="grid-bg absolute inset-0" />
-      <div className="absolute left-1/2 top-0 h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-mint/25 blur-[110px]" />
+    <section
+  id="top"
+  className="relative overflow-hidden pt-28 sm:pt-36"
+  style={{
+    backgroundImage: `url(${heroBg})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }}
+>
+  {/* Overlay for text readability */}
+  <div className="absolute inset-0 bg-white/85" />
 
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+  
+  <div className="absolute left-1/2 top-0 h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-mint/25 blur-[110px]" />
+
+  <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white/80 px-4 py-1.5 text-xs text-mute shadow-sm backdrop-blur">
             <Sparkles size={14} className="text-brand" /> Technical University of Mombasa &middot; 9th &ndash; 12th November 2026
@@ -280,9 +292,13 @@ function Footer() {
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {organizers.map((o) => (
             <div key={o.name} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-white font-display text-lg font-bold text-brand">
-                {o.initials}
-              </div>
+              <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-white font-display text-lg font-bold text-brand">
+  {o.logo ? (
+    <img src={o.logo} alt={o.name} className="h-full w-full object-contain p-1.5" />
+  ) : (
+    o.initials
+  )}
+</div>
               <div>
                 <p className="font-display font-semibold">{o.name}</p>
                 <p className="text-xs leading-snug text-white/65">{o.full}</p>
@@ -309,7 +325,7 @@ export default function Landing() {
         <Events />
         <Audience />
         <Partners />
-        <Organizers />
+        < C0-Organizers />
       </main>
       <Footer />
     </>
