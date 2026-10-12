@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import { eventCategories } from '../data/events'
 
 const empty = {
@@ -13,6 +14,9 @@ const empty = {
   featured: false,
 }
 
+const MAX_BYTES = 2 * 1024 * 1024
+const ALLOWED = ['image/jpeg', 'image/png']
+
 const isHttpUrl = (value) => {
   try {
     const { protocol } = new URL(value)
@@ -22,12 +26,25 @@ const isHttpUrl = (value) => {
   }
 }
 
+async function uploadEventImage(file) {
+  if (!supabase) throw new Error('Image upload needs the live Supabase connection.')
+  const ext = file.type === 'image/png' ? 'png' : 'jpg'
+  const path = `events/${crypto.randomUUID()}.${ext}`
+  const { error } = await supabase.storage
+    .from('event-images')
+    .upload(path, file, { contentType: file.type })
+  if (error) throw error
+  return supabase.storage.from('event-images').getPublicUrl(path).data.publicUrl
+}
+
 export default function EventForm({ event, onSave, onClose, saveError }) {
   const [form, setForm] = useState(() =>
     event ? { ...empty, ...event, date: event.date.slice(0, 16) } : empty,
   )
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const [preview, setPreview] = useState(event?.image || '')
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
@@ -38,15 +55,32 @@ export default function EventForm({ event, onSave, onClose, saveError }) {
   const set = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
+  const pickImage = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!ALLOWED.includes(file.type)) {
+      setError('Image must be a JPEG or PNG file.')
+      e.target.value = ''
+      return
+    }
+    if (file.size > MAX_BYTES) {
+      setError('Image must be under 2MB.')
+      e.target.value = ''
+      return
+    }
+    setError('')
+    setImageFile(file)
+    setPreview(URL.createObjectURL(file))
+  }
+
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     const link = form.external_link.trim()
-    const image = form.image.trim()
     if (!isHttpUrl(link)) return setError('External link must be a full URL starting with http:// or https://')
-    if (image && !isHttpUrl(image)) return setError('Image must be a full URL starting with http:// or https://')
     setBusy(true)
     try {
+      const image = imageFile ? await uploadEventImage(imageFile) : form.image
       await onSave({
         title: form.title.trim(),
         description: form.description.trim(),
@@ -57,6 +91,8 @@ export default function EventForm({ event, onSave, onClose, saveError }) {
         image,
         featured: form.featured,
       })
+    } catch (err) {
+      setError(err.message || 'Could not save the event.')
     } finally {
       setBusy(false)
     }
@@ -117,8 +153,11 @@ export default function EventForm({ event, onSave, onClose, saveError }) {
           </div>
 
           <div>
-            <label htmlFor="ev-img" className="mb-1.5 block text-sm font-medium">Image URL <span className="font-normal text-mute">(optional)</span></label>
-            <input id="ev-img" type="url" className="field" placeholder="https://..." value={form.image} onChange={set('image')} />
+            <label htmlFor="ev-img" className="mb-1.5 block text-sm font-medium">
+              Event image <span className="font-normal text-mute">(optional, JPEG or PNG, max 2MB)</span>
+            </label>
+            <input id="ev-img" type="file" accept="image/jpeg,image/png" className="field" onChange={pickImage} />
+            {preview && <img src={preview} alt="Preview" className="mt-3 h-32 w-full rounded-xl object-cover" />}
           </div>
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-panel p-3">
